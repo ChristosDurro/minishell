@@ -3,61 +3,59 @@
 /*                                                        :::      ::::::::   */
 /*   unset.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cdurro <marvin@42.fr>                      +#+  +:+       +#+        */
+/*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 14:21:54 by cdurro            #+#    #+#             */
-/*   Updated: 2023/10/09 15:24:36 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/14 09:59:51 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
 
-static	char	**unset_var(char *var, int space, t_shell *shell)
+static void	unset_var(char *var, t_shell *shell)
 {
-	int	i;
-	int	j;
-	char **new_envp;
+	int		i;
+	int		j;
 
 	i = 0;
 	j = 0;
 	if (!env_exists(shell->envp, var))
-		return (shell->envp);
-	new_envp = malloc(sizeof(char *) * (space - 1));
-	if (!new_envp)
-		return (NULL);
+		return ;
+	i = 0;
 	while (shell->envp[i] && shell->envp[j])
 	{
-		if (ft_strncmp(shell->envp[j], var, ft_strlen(var)) == 0 && shell->envp[j][ft_strlen(var)] == '=')
-				j++;
+		if (ft_strncmp(shell->envp[j], var, ft_strlen(var)) == 0
+			&& shell->envp[j][ft_strlen(var)] == '=')
+		{
+			free(shell->envp[i]);
+			j++;
+		}
 		else
 		{
-			new_envp[i] = ft_strdup(shell->envp[j]);
+			shell->envp[i] = shell->envp[j];
 			i++;
 			j++;
 		}
 	}
-	new_envp[i] = 0;
-	free(shell->envp);
-	return (new_envp);
+	shell->envp[i] = 0;
 }
 
-void	unset(t_token *start, t_shell *shell)
+void	unset(t_command cmd, t_shell *shell)
 {
-	t_token	*current;
-	int	i;
-	int	j;
+	char	**args;
+	int		i;
+	int		j;
 
-	if (start->next)
-		current = start->next;
-	else
-		return ;
-	while (current)
+	args = arg_expansion(&cmd, *shell);
+	i = 1;
+	while (args[i])
 	{
-		i = 0;
 		j = 0;
-		while (shell->envp[i])
-			i++;
-		shell->envp = unset_var(current->value, i, shell);
-		current = current->next;
+		while (shell->envp[j])
+			j++;
+		unset_var(args[i], shell);
+		i++;
 	}
+	free_string_array(args);
+	g_status = 0;
 }

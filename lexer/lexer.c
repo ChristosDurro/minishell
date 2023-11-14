@@ -3,15 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   lexer.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cdurro <marvin@42.fr>                      +#+  +:+       +#+        */
+/*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/22 09:36:24 by cdurro            #+#    #+#             */
-/*   Updated: 2023/10/08 14:34:28 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/14 09:11:58 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
-
 
 static int	is_operator(char *cmd)
 {
@@ -25,66 +24,42 @@ static int	is_operator(char *cmd)
 
 static void	handle_operator(char **cmd, t_token **last, int i)
 {
-	if (ft_strncmp(*cmd, ">>", 2) == 0)
-	{
+	if (ft_strncmp(*cmd, ">>", 2) == 0 && (*cmd)++ && (*cmd)++)
 		*last = new_token(APPEND, ">>", *last, i);
-		(*cmd) += 2;
-	}
-	
-	else if (ft_strncmp(*cmd, "<<", 2) == 0)
-	{
+	else if (ft_strncmp(*cmd, "<<", 2) == 0 && (*cmd)++ && (*cmd)++)
 		*last = new_token(HERE_DOC, "<<", *last, i);
-		(*cmd) += 2;
-	}
-	
-	else if (**cmd == '|')
-	{
+	else if (**cmd == '|' && (*cmd)++)
 		*last = new_token(PIPE, "|", *last, i);
-		(*cmd)++;
-	}
-	
-	else if (**cmd == '<')
-	{
+	else if (**cmd == '<' && (*cmd)++)
 		*last = new_token(REDIR_IN, "<", *last, i);
-		(*cmd)++;
-	}
-	
-	else if (**cmd == '>')
-	{
+	else if (**cmd == '>' && (*cmd)++)
 		*last = new_token(REDIR_OUT, ">", *last, i);
-		(*cmd)++;
-	}
-
-	else if (**cmd == ';')
-	{
+	else if (**cmd == ';' && (*cmd)++)
 		*last = new_token(INVALID, ";", *last, i);
-		(*cmd)++;
-	}
 }
 
-static int	get_len(char *cmd, char c)
+static int	get_len(char *cmd)
 {
 	int		len;
-	char	quote;
 
 	len = 0;
 	if (cmd[len] == '\'')
 	{
-		len++;
-		while (cmd[len] && cmd[len] != '\'')
-			len++;
+		while (cmd[++len] && !(cmd[len] == '\''
+				&& (cmd[len + 1] == ' ' || !cmd[len + 1])))
+			;
 		return (++len);
 	}
 	else if (cmd[len] == '"')
 	{
-		len++;
-		while (cmd[len] && cmd[len] != '"')
-			len++;
+		while (cmd[++len] && !(cmd[len] == '"'
+				&& (cmd[len + 1] == ' ' || !cmd[len + 1])))
+			;
 		return (++len);
 	}
 	else 
 	{
-		while (cmd[len] && !is_meta(cmd[len]) && (cmd[len] != '"' && cmd[len] != '\''))
+		while (cmd[len] && !is_meta(cmd[len]))
 			len++;
 	}
 	return (len);
@@ -94,31 +69,34 @@ static void	handle_word(char **cmd, t_token **last, int i)
 {
 	int	len;
 
-	len = get_len(*cmd, '\0');
+	len = get_len(*cmd);
+	if (len == 0)
+		exit(g_status);
 	*last = new_token(WORD, ft_substr(*cmd, 0, len), *last, i);
 	(*cmd) += len;
 }
 
 t_token	*lexer(char *cmd)
 {
-	t_token *start;
-	t_token *last;
+	t_token	*start;
+	t_token	*last;
 	int		i;
 
 	start = NULL;
 	last = NULL;
 	i = 0;
+	if (!valid_quotes(cmd) && printf("Parser Error: unmatched quotes.\n"))
+		return (start);
 	while (*cmd)
 	{
 		while (*cmd == ' ' || *cmd == '\t')
 			cmd++;
 		if (*cmd == '\0')
-			break;
+			break ;
 		if (is_operator(cmd))
 			handle_operator(&cmd, &last, i);
 		else
 			handle_word(&cmd, &last, i);
-		// printf("cmd lexer: %s\n", &cmd);
 		if (!start && last)
 			start = last;
 		i++;

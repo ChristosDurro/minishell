@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   lexer.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cdurro <marvin@42.fr>                      +#+  +:+       +#+        */
+/*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/22 11:45:40 by cdurro            #+#    #+#             */
-/*   Updated: 2023/10/08 11:58:32 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/10 11:46:44 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef LEXER_H
-#define LEXER_H
+# define LEXER_H
 
-typedef enum e_type	t_type;
+typedef enum e_type		t_type;
 typedef struct s_token	t_token;
 
 enum e_type
@@ -37,7 +37,7 @@ struct s_token
 	t_token	*previous;
 };
 
-int	is_meta(char c);
+int		is_meta(char c);
 
 void	print_lexer(t_token *token);
 

@@ -3,17 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   pwd.c                                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cdurro <marvin@42.fr>                      +#+  +:+       +#+        */
+/*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/26 12:04:40 by cdurro            #+#    #+#             */
-/*   Updated: 2023/10/08 11:17:01 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/14 09:58:50 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
 
 void	pwd(t_shell shell)
-{	
-	shell.cwd = getcwd(shell.cwd, 256);
+{
+	char	tmp[1024];
+
+	shell.cwd = getcwd(tmp, 1024);
 	printf("%s\n", shell.cwd);
+	g_status = 0;
 }

@@ -22,7 +22,7 @@ NAME = libft.a
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
 
-all: ${NAME}
+all: ${NAME} ${BONUS_OBJS}
 
 %.o: %.c
 	${CC} ${CFLAGS} -c $< -o ${<:.c=.o}

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   token.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cdurro <marvin@42.fr>                      +#+  +:+       +#+        */
+/*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/22 11:45:09 by cdurro            #+#    #+#             */
-/*   Updated: 2023/10/08 12:00:50 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/10 13:07:23 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 t_token	*new_token(t_type type, char *cmd, t_token *prev, int index)
 {
-	t_token *token;
+	t_token	*token;
 
 	token = malloc(sizeof(t_token));
 	if (!token)
@@ -38,15 +38,29 @@ int	is_meta(char c)
 
 void	print_lexer(t_token *token)
 {
-	t_token *current = token;
-	int i;
+	t_token	*current;
+	int		i;
 
+	current = token;
 	i = 0;
-	// printf("hello\n");
 	while (current)
 	{
-		printf("token #%d | type: %d | value: %s | index: %d\n", i++, (int)current->type, current->value, current->index);
+		printf("token #%d | type: %d | value: %s | index: %d\n",
+			i++, (int)current->type, current->value, current->index);
 		current = current->next;
 	}
-	// printf("token #%d | type: %d | value: %s", i, (int)current->type, current->value);
+}
+
+void	free_tokens(t_token *token)
+{
+	t_token	*tmp;
+
+	while (token)
+	{
+		tmp = token;
+		token = token->next;
+		if (tmp->type == WORD)
+			free(tmp->value);
+		free(tmp);
+	}
 }

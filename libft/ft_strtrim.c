@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ft_strtrim.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: cdurro <marvin@42.fr>                      +#+  +:+       +#+        */
+/*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/05/07 10:05:22 by cdurro            #+#    #+#             */
-/*   Updated: 2023/06/26 10:15:29 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/10 10:39:24 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ static void	skip_characters(char const *set, const char *s1,
 		(*s1_len)--;
 }
 
-char	*ft_strtrim(char const *s1, char const *set)
+char	*ft_strtrim(char *s1, char const *set)
 {
 	size_t	len;
 	size_t	s1_len;
@@ -58,6 +58,7 @@ char	*ft_strtrim(char const *s1, char const *set)
 		j++;
 		i++;
 	}
+	free(s1);
 	trimmed[j] = '\0';
 	return (trimmed);
 }

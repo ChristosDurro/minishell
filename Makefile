@@ -1,6 +1,8 @@
 SRCS = main.c utils.c lexer/lexer.c lexer/token.c signals/signals.c \
 	env.c builtins/echo.c parser/parser.c builtins/pwd.c builtins/cd.c \
-	builtins/export.c builtins/unset.c terminal.c
+	builtins/export.c builtins/unset.c executor/executor.c \
+	builtins/utils.c builtins/exit.c free.c expansion.c \
+	parser/parser_utils.c
 
 OBJS = ${SRCS:.c=.o}
 
@@ -12,7 +14,7 @@ LIBFT = libft
 LIBFT_LIB = libft/libft.a
 
 CC = cc
-CFLAGS = #-Wall -Werror -Wextra
+CFLAGS = -g #-fsanitize=address#-Wall -Werror -Wextra
 
 all: ${NAME}
 
