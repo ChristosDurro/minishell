@@ -6,30 +6,14 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/24 13:48:01 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/10 12:05:43 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/11/15 18:08:51 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
 
-void	set_env(char **ev, t_shell *shell)
-{
-	int	i;
-
-	shell->envp = ft_calloc(sizeof(char *), 4096);
-	if (!shell->envp)
-		return ;
-	i = 0;
-	while (ev[i])
-	{
-		shell->envp[i] = ft_strdup(ev[i]);
-		i++;
-	}
-}
-
 char	*get_env(char *str, t_shell shell)
 {
-	char	*env;
 	int		i;
 
 	i = 0;
@@ -89,10 +73,9 @@ void	change_env(char *new_var, t_shell *shell)
 	free(tmp);
 }
 
-void	realloc_env(char **ev, char *new_var, int space, t_shell *shell)
+void	realloc_env(char **ev, char *new_var, t_shell *shell)
 {
 	int	i;
-	int	j;
 
 	i = 0;
 	while (ev[i])
@@ -106,4 +89,32 @@ void	realloc_env(char **ev, char *new_var, int space, t_shell *shell)
 	shell->envp[i] = ft_strdup(new_var);
 	i++;
 	shell->envp[i] = 0;
+}
+
+void	set_env(char **ev, t_shell *shell)
+{
+	int		i;
+	char	*lvl;
+	char	*tmp;
+	char	*tmp2;
+
+	shell->envp = ft_calloc(sizeof(char *), 4096);
+	if (!shell->envp)
+		return ;
+	i = 0;
+	while (ev[i])
+	{
+		shell->envp[i] = ft_strdup(ev[i]);
+		i++;
+	}
+	lvl = get_env("SHLVL", *shell);
+	if (lvl)
+	{
+		tmp2 = ft_itoa(ft_atoi(lvl) + 1);
+		tmp = ft_strjoin("SHLVL=", tmp2);
+		free(tmp2);
+		if (env_exists(shell->envp, "SHLVL"))
+			change_env(tmp, shell);
+		free(tmp);
+	}
 }

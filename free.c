@@ -6,7 +6,7 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/10 12:12:06 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/14 09:14:31 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/12/15 16:11:11 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,15 +15,23 @@
 void	free_everything(t_shell *shell)
 {
 	int	i;
-	int	j;
-	int	k;
 
 	if (shell->token_head)
 		free_tokens(shell->token_head);
 	i = -1;
 	while (++i < shell->commands_num)
 	{
-		free(shell->commands[i].args);
+		if (i == shell->redir_error_index)
+			break ;
+		if (shell->parse_error == 0
+			|| (shell->parse_error == 2
+				&& i < shell->redir_error_index)
+			|| shell->parse_error == 3)
+		{
+			free(shell->commands[i].redirs);
+			free(shell->commands[i].redir_types);
+			free(shell->commands[i].args);
+		}
 	}
 	free(shell->commands);
 }

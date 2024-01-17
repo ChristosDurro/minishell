@@ -1,8 +1,13 @@
-SRCS = main.c utils.c lexer/lexer.c lexer/token.c signals/signals.c \
+SRCS = main.c utils.c lexer/lexer.c lexer/lexer_utils.c \
+	lexer/token.c signals/signals.c \
 	env.c builtins/echo.c parser/parser.c builtins/pwd.c builtins/cd.c \
 	builtins/export.c builtins/unset.c executor/executor.c \
+	executor/child_processes.c executor/executor_utils.c \
+	executor/redirections.c executor/redirections_utils.c \
+	executor/redirections_heredoc.c executor/heredoc_expand.c\
 	builtins/utils.c builtins/exit.c free.c expansion.c \
-	parser/parser_utils.c
+	parser/parser_utils.c parser/redirection_parsing.c \
+	expansion_utils.c
 
 OBJS = ${SRCS:.c=.o}
 
@@ -14,7 +19,7 @@ LIBFT = libft
 LIBFT_LIB = libft/libft.a
 
 CC = cc
-CFLAGS = -g #-fsanitize=address#-Wall -Werror -Wextra
+CFLAGS =  -Wall -Werror -Wextra #-g #-fsanitize=address
 
 all: ${NAME}
 

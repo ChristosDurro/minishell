@@ -6,7 +6,7 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/11/10 12:11:01 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/14 09:14:53 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/12/15 16:45:39 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 char	**arg_expansion(t_command *cmd, t_shell shell)
 {
 	int		i;
-	int		j;
 	char	**ret;
 
 	i = 0;
@@ -32,39 +31,70 @@ char	**arg_expansion(t_command *cmd, t_shell shell)
 	return (ret);
 }
 
-static char	*expansion_logic(char *str, int *j, t_shell shell)
+void	init_tmps(char **tmp, char **tmp2, char *str, int *j)
 {
-	char	*env;
+	int	len;
 
-	if (ft_strncmp(str + *j, "$?", 2) == 0)
-		return ("$");
-	env = expand(str + *j, j, shell);
-	(*j)--;
-	return (env);
+	len = 0;
+	while (*(str + *j + 1 + len) && (ft_isalnum(*(str + *j + 1 + len))
+			|| *(str + *j + 1 + len) == '_' || *(str + *j + 1 + len) == '?'))
+		len++;
+	*tmp = ft_substr(str + *j, 0, len + 1);
+	len = 0;
+	while (*(str + *j + 1 + len) && (ft_isalnum(*(str + *j + 1 + len))
+			|| *(str + *j + 1 + len) == '_'))
+		len++;
+	*tmp2 = ft_substr(str + *j, 0, len + 1);
+}
+
+char	*expansion_logic(char *str, int *j, t_shell shell)
+{
+	char	*tmp;
+	char	*tmp2;
+
+	init_tmps(&tmp, &tmp2, str, j);
+	if (ft_strncmp(tmp, "$?", 2) == 0)
+		return (free(tmp2), expansion_util(tmp, str, j, shell));
+	else if (env_exists(shell.envp, tmp2 + 1))
+		return (expansion_util2(tmp2, str, j, shell));
+	else if (ft_strncmp(tmp, "$", 1) == 0 && ft_strlen(tmp) == 1)
+	{
+		free(tmp);
+		free(tmp2);
+		(*j) += ft_strlen("$") - 1;
+		return (ft_strdup("$"));
+	}
+	else
+	{
+		(*j) += ft_strlen(tmp2) - 1;
+		free(tmp);
+		free(tmp2);
+		return (ft_strdup(""));
+	}
 }
 
 char	*expand2(char *str, t_shell shell)
 {
 	char	*ret;
 	char	quote;
+	char	*tmp;
 	int		j;
 	int		i;
 
 	ret = ft_calloc(4096, sizeof(char));
-	j = -1;
-	i = 0;
-	quote = '\0';
+	init_expand_vars(&i, &j, &quote);
 	while (str[++j])
 	{
-		if ((str[j] == '"' || str[j] == '\'') && !quote)
-			quote = str[j];
-		else if (str[j] && str[j] == quote)
-			quote = '\0';
+		if (quote_val(str[j], &quote))
+			continue ;
 		else if (str[j] && str[j] == '$' && (quote == '"' || !quote))
 		{
-			i += ft_strlcat(ret, expansion_logic(str, &j, shell), 4096);
-			while (ret[i - 1] == '\0')
-				i--;
+			tmp = expansion_logic(str, &j, shell);
+			i += ft_strlcat(ret, tmp, 4096);
+			free(tmp);
+			if (i > 0)
+				while (ret[i - 1] == '\0')
+					i--;
 		}
 		else
 			ret[i++] = str[j];

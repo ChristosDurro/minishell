@@ -6,7 +6,7 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/25 14:46:12 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/10 13:11:05 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/12/15 16:54:44 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,13 @@ int	count_args(t_token head)
 	t_token	*current;
 	int		count;
 
-	current = head.next;
+	current = &head;
 	count = 0;
-	while (current && !is_meta(current->value[0]))
+	while (current && current->type != PIPE)
 	{
-		count++;
+		if (!is_meta(current->value[0])
+			&& (current->previous && !is_meta(current->previous->value[0])))
+			count++;
 		current = current->next;
 	}
 	return (count);
@@ -33,12 +35,7 @@ int	count_commands(t_token head)
 	int		count;
 
 	count = 1;
-	if (!head.value)
-		return (0);
-	else if (head.next)
-		current = head.next;
-	else
-		return (count);
+	current = &head;
 	while (current)
 	{
 		if (ft_strncmp(current->value, "|", 1) == 0)
@@ -63,6 +60,32 @@ int	command_struct_len(t_shell shell)
 	return (len);
 }
 
+static void	parser_logic(int *i, int *arg, t_token **current, t_shell *shell)
+{
+	if ((*current)->type == WORD
+		&& ((*current)->previous == NULL
+			|| (*current)->previous->type == PIPE))
+		shell->parse_error = create_command(i, arg, (*current), shell);
+	else if ((*current)->type == WORD
+		&& !is_meta((*current)->previous->value[0])
+		&& (*current)->index != shell->commands[(*i)].cmd_index)
+		shell->parse_error = create_arg(i, arg, (*current), shell);
+	else if ((*current)->type == REDIR_IN)
+		shell->parse_error = redir_in(i, arg, current, shell);
+	else if ((*current)->type == REDIR_OUT)
+		shell->parse_error = redir_out(i, arg, current, shell);
+	else if ((*current)->type == HERE_DOC)
+		shell->parse_error = here_doc(i, arg, current, shell);
+	else if ((*current)->type == APPEND)
+		shell->parse_error = append(i, arg, current, shell);
+	else if ((*current)->type == PIPE && !(*current)->next)
+	{
+		printf("No command after pipe\n");
+		shell->parse_error = 2;
+		shell->redir_error_index = ++(*i);
+	}
+}
+
 int	parser(t_shell *shell)
 {
 	int		i;
@@ -70,47 +93,16 @@ int	parser(t_shell *shell)
 	t_token	*current;
 
 	shell->commands_num = count_commands(*shell->token_head);
-	shell->commands = malloc(sizeof(t_command) * shell->commands_num);
+	shell->commands = malloc(sizeof(t_command) * (shell->commands_num));
 	current = shell->token_head;
 	i = -1;
 	arg = 0;
 	while (current)
 	{
-		if (current->type == WORD
-			&& (current->previous == NULL
-				|| ft_strncmp(current->previous->value, "|", 1) == 0))
-			shell->parse_error = create_command(&i, &arg, current, shell);
-		else if (current->type == WORD)
-			shell->parse_error = create_arg(&i, &arg, current, shell);
-		else if (current->type == REDIR_IN)
-			shell->parse_error = redir_in(&i, current, shell);
-		else if (current->type == REDIR_OUT)
-			shell->parse_error = redir_out(&i, current, shell);
+		parser_logic(&i, &arg, &current, shell);
+		if (shell->parse_error)
+			return (0);
 		current = current->next;
 	}
 	return (1);
-}
-
-void	print_commands(t_shell shell)
-{
-	int	i;
-	int	j;
-
-	i = 0;
-	shell.commands_num = count_commands(*shell.token_head);
-	while (i < shell.commands_num)
-	{
-		printf("\n\n");
-		printf("command: %s\n", shell.commands[i].cmd);
-		j = 0;
-		while (shell.commands[i].args[j])
-		{
-			printf("arg: %s\n", shell.commands[i].args[j]);
-			j++;
-		}
-		printf("redir_in: %d\n", shell.commands[i].redir_in);
-		printf("redir_out: %d\n", shell.commands[i].redir_out);
-		printf("redir_file: %s\n", shell.commands[i].redir_file);
-		i++;
-	}
 }

@@ -6,108 +6,102 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/10/30 10:35:13 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/14 10:19:55 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/12/11 16:06:11 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
 
-static void	exec_builtin(t_command cmd, t_shell *shell)
+static int	wrapper_piping(int *ends)
 {
-	if (ft_strncmp(cmd.cmd, "echo", 4) == 0)
-		echo(cmd, *shell);
-	else if (ft_strncmp(cmd.cmd, "pwd", 3) == 0)
-		pwd(*shell);
-	else if (ft_strncmp(cmd.cmd, "cd", 3) == 0)
-		cd(cmd, shell);
-	else if (ft_strncmp(cmd.cmd, "env", 3) == 0)
-		print_envp(cmd, *shell);
-	else if (ft_strncmp(cmd.cmd, "export", 6) == 0)
-		export(cmd, shell);
-	else if (ft_strncmp(cmd.cmd, "unset", 5) == 0)
-		unset(cmd, shell);
-	else if (ft_strncmp(cmd.cmd, "exit", 4) == 0)
-		builtin_exit(cmd, shell);
-}
-
-static void	exec_simple_cmd(t_command current, t_shell *shell)
-{
-	pid_t	pid;
-	int		status;
-
-	pid = fork();
-	if (pid == -1)
+	if (pipe(ends) < 0)
 	{
-		printf("Error forking\n");
-		return ;
+		g_status = 1;
+		perror("piping error");
+		return (1);
 	}
-	if (pid == 0)
-		execute(current, *shell);
-	waitpid(pid, &status, 0);
-	if (WIFEXITED(status))
-		g_status = WEXITSTATUS(status);
+	return (0);
 }
 
-void	executor(t_shell *shell)
+static int	init_pipes_and_pids(t_shell *shell, t_pipex *pipex_data)
 {
-	t_command	current;
-	int			i;
-	int			j;
+	int	i;
+	int	ends[2];
 
-	i = 0;
-	shell->commands_num = count_commands(*shell->token_head);
-	while (i < shell->commands_num)
+	pipex_data->pipes_r = malloc(sizeof(int) * (shell->commands_num - 1));
+	pipex_data->pipes_w = malloc(sizeof(int) * (shell->commands_num - 1));
+	pipex_data->pids = malloc(sizeof(int) * shell->commands_num);
+	pipex_data->heredoc_r = malloc(sizeof(int) * shell->commands_num);
+	if (!pipex_data->pipes_r || !pipex_data->pipes_w || \
+		!pipex_data->pids || !pipex_data->heredoc_r)
 	{
-		current = shell->commands[i];
-		if (is_builtin(current.cmd))
-			exec_builtin(current, shell);
-		else
-			exec_simple_cmd(current, shell);
+		free_pipex(pipex_data);
+		return (1);
+	}
+	i = 0;
+	while (i < shell->commands_num - 1)
+	{
+		pipex_data->pids[i] = -1;
+		if (wrapper_piping(ends))
+			return (free_pipex(pipex_data));
+		pipex_data->pipes_w[i] = ends[1];
+		pipex_data->pipes_r[i] = ends[0];
 		i++;
 	}
+	pipex_data->pids[i] = -1;
+	return (0);
 }
 
-static char	*get_path(char **args, t_shell shell)
+static int	wrapper_forking(t_pipex *pipex_data, pid_t i, t_shell *shell)
 {
-	char	*path;
-
-	if (args[0][0] == '.' || args[0][0] == '/')
+	if (shell->commands[i].cmd == NULL || \
+		(is_builtin(shell->commands[i].cmd) && shell->commands_num == 1))
 	{
-		if (access(args[0], X_OK) == 0)
-			path = args[0];
+		pipex_data->pids[i] = -1;
+		return (0);
 	}
-	else
-		path = find_path(args[0], shell);
-	return (path);
+	pipex_data->pids[i] = fork();
+	if (pipex_data->pids[i] < 0)
+		return (1);
+	return (0);
 }
 
-/* Function that take the command and send it to find_path
- before executing it. */
-void	execute(t_command cmd, t_shell shell)
+static int	executor_loop(t_shell *shell, t_pipex *pipex_data, int i)
 {
-	char	*path;
-	char	**args;
+	if (open_redir_files(shell->commands[i], pipex_data, i))
+	{
+		close_pipes(pipex_data, i, shell->commands_num - 1);
+		g_status = 1;
+		return (1);
+	}
+	if (wrapper_forking(pipex_data, i, shell))
+	{
+		printf("forking failed\n");
+		g_status = 1;
+		return (1);
+	}
+	if (shell->commands[i].cmd && pipex_data->pids[i] <= 0)
+		exec_child(shell, pipex_data, i);
+	return (0);
+}
+
+int	executor(t_shell *shell)
+{
 	int		i;
-	int		j;
+	t_pipex	pipex_data;
 
-	signal(SIGINT, child_singal);
-	args = arg_expansion(&cmd, shell);
-	path = get_path(args, shell);
-	if (!path)
-	{
-		printf("Command not found: %s\n", cmd.cmd);
-		free_string_array(args);
-		free_everything(&shell);
-		free_envp(&shell);
-		rl_clear_history();
-		exit(127);
-	}
-	if (execve(path, args, shell.envp) == -1)
-	{
-		free_string_array(args);
-		free_everything(&shell);
-		free_envp(&shell);
-		rl_clear_history();
-		exit(127);
-	}
+	signal(SIGINT, &child_signal);
+	signal(SIGQUIT, &child_signal);
+	if (init_pipes_and_pids(shell, &pipex_data) || \
+		open_heredocs(shell, &pipex_data))
+		return (1);
+	i = 0;
+	while (i < shell->commands_num)
+		executor_loop(shell, &pipex_data, i++);
+	close_pipes(&pipex_data, shell->commands_num, shell->commands_num - 1);
+	wait_for_processes(shell, pipex_data);
+	free_pipex(&pipex_data);
+	signal(SIGINT, &handle_signal);
+	signal(SIGQUIT, SIG_IGN);
+	return (0);
 }

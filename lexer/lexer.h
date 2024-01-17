@@ -6,7 +6,7 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/22 11:45:40 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/10 11:46:44 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/12/14 19:48:51 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,9 @@ enum e_type
 {
 	WORD,
 	PIPE,
-	COMMAND,
 	REDIR_IN,
 	REDIR_OUT,
 	HERE_DOC,
-	INVALID,
 	APPEND
 };
 
@@ -38,6 +36,8 @@ struct s_token
 };
 
 int		is_meta(char c);
+int		get_len(char *cmd);
+int		is_operator(char *cmd);
 
 void	print_lexer(t_token *token);
 

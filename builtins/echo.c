@@ -6,7 +6,7 @@
 /*   By: cdurro <cdurro@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/09/24 14:20:55 by cdurro            #+#    #+#             */
-/*   Updated: 2023/11/14 10:03:58 by cdurro           ###   ########.fr       */
+/*   Updated: 2023/12/15 17:29:05 by cdurro           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@ int	valid_quotes(char *str)
 	int	d_quote;
 	int	s_quote;
 	int	i;
-	int	j;
 	int	len;
 
 	i = 0;
@@ -37,28 +36,42 @@ int	valid_quotes(char *str)
 	return (1);
 }
 
-void	echo(t_command cmd, t_shell shell)
+static int	check_n_flag(int i, int j, char *str)
+{
+	if (ft_strncmp(str, "-n", 2) == 0
+		&& ft_strlen(str) == 2 && i == j)
+		return (1);
+	else if ((ft_strncmp(str, "-n", 2) == 0)
+		&& ft_strlen(str) == 2 && i == j - 1)
+		return (1);
+	return (0);
+}
+
+void	echo(t_command cmd, t_shell shell, int fd)
 {
 	int		i;
+	int		j;
 	int		n_flag;
 	char	**args;
 
 	i = 0;
+	j = 1;
 	n_flag = 0;
 	args = arg_expansion(&cmd, shell);
 	while (args[++i])
 	{
-		if (ft_strncmp(args[i], "$?", 2) == 0 && ft_strlen(args[i]) == 2)
-			printf("%d", g_status);
-		else if (ft_strncmp(args[i], "-n", 2) == 0 && i == 1)
+		if (check_n_flag(i, j, args[i]))
+		{
 			n_flag = 1;
+			j++;
+		}
 		else
-			printf("%s", args[i]);
-		if (i + 1 <= cmd.args_num && (ft_strncmp(args[i], "-n", 2) != 0))
-			printf(" ");
+			ft_putstr_fd(args[i], fd);
+		if (i + 1 <= cmd.args_num && !(check_n_flag(i, j, args[i])))
+			write(fd, " ", 1);
 	}
 	if (!n_flag)
-		printf("\n");
+		write(fd, "\n", 1);
 	free_string_array(args);
 	g_status = 0;
 }
